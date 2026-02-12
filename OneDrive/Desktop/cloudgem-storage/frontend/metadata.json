@@ -1,0 +1,4 @@
+{
+  "name": "SecureFileStream",
+  "description": "A secure file management system featuring JWT authentication with refresh token rotation and seamless backend integration."
+}
