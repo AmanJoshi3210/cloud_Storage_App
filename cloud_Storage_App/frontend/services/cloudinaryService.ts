@@ -5,7 +5,8 @@ export const uploadToCloudinary = async (
   config: CloudinaryConfig,
   onProgress?: (progress: number) => void
 ): Promise<{ url: string; width: number; height: number; format: string }> => {
-  const url = `https://api.cloudinary.com/v1_1/${config.cloudName}/image/upload`;
+  const resourceType = file.type.startsWith('image/') ? 'image' : 'auto';
+  const url = `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`;
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', config.uploadPreset);
@@ -26,9 +27,9 @@ export const uploadToCloudinary = async (
         const response = JSON.parse(xhr.responseText);
         resolve({
           url: response.secure_url,
-          width: response.width,
-          height: response.height,
-          format: response.format,
+          width: response.width ?? 0,
+          height: response.height ?? 0,
+          format: response.format ?? '',
         });
       } else {
         reject(new Error(`Cloudinary upload failed: ${xhr.statusText}`));
