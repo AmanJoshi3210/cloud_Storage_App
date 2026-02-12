@@ -13,9 +13,22 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-// Load ENV
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-if (!process.env.MONGO_URI) dotenv.config();
+// Load ENV from backend/.env (never from repo root)
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+
+const requiredEnv = [
+  'MONGO_URI',
+  'JWT_SECRET',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET'
+];
+
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length > 0) {
+  console.error(`❌ Missing required environment variables: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
 
 const User = require('./models/User');
 const File = require('./models/File');

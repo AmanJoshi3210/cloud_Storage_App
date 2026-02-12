@@ -21,7 +21,11 @@ This project is now structured as **separate backend and frontend apps** so each
    ```bash
    npm install --prefix backend
    ```
-2. Create/update environment variables in `backend/.env`:
+2. Copy `backend/.env.example` to `backend/.env` and update values:
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+
    ```env
    PORT=5000
    MONGO_URI=mongodb://localhost:27017/cloudstorage
@@ -30,6 +34,8 @@ This project is now structured as **separate backend and frontend apps** so each
    CLOUDINARY_API_KEY=your_cloudinary_key
    CLOUDINARY_API_SECRET=your_cloudinary_secret
    ```
+   Never commit real secrets to git. `.gitignore` excludes backend env files by default.
+
 3. Start backend:
    ```bash
    npm run dev --prefix backend
