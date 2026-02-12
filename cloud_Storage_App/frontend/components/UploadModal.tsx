@@ -26,8 +26,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [uploads, setUploads] = useState<FileUploadState[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
-
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -113,6 +111,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const removeUpload = (file: File) => {
     setUploads(prev => prev.filter(u => u.file !== file));
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
