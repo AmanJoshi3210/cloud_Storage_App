@@ -43,66 +43,55 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
     const newUploads = files.map(file => ({
       file,
-      preview: URL.createObjectURL(file),
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
       status: UploadStatus.IDLE,
       progress: 0,
     }));
 
     setUploads(prev => [...prev, ...newUploads]);
 
-    // Process sequentially to manage resources
-    for (let i = 0; i < newUploads.length; i++) {
-       const uploadState = newUploads[i];
-       const currentIndex = uploads.length + i; // Current index in global state (approximated)
-       
-       // Update Status: Uploading
-       setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.UPLOADING } : u));
+    for (const uploadState of newUploads) {
+      setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.UPLOADING } : u));
 
-       try {
-           // 1. Upload to Cloudinary
-           const uploadedData = await uploadToCloudinary(uploadState.file, config, (progress) => {
-                setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, progress } : u));
-           });
+      try {
+        const uploadedData = await uploadToCloudinary(uploadState.file, config, (progress) => {
+          setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, progress } : u));
+        });
 
-           // 2. AI Analysis (if image)
-           let aiData = { description: '', tags: [] as string[] };
-           if (uploadState.file.type.startsWith('image/')) {
-                setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.ANALYZING } : u));
-                
-                // Convert file to base64 for Gemini
-                const base64 = await new Promise<string>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.readAsDataURL(uploadState.file);
-                });
-                
-                aiData = await analyzeImage(base64, uploadState.file.type);
-           }
+        let aiData = { description: '', tags: [] as string[] };
+        if (uploadState.file.type.startsWith('image/')) {
+          setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.ANALYZING } : u));
 
-           // 3. Complete
-           const newFile: StoredFile = {
-               id: uuidv4(),
-               url: uploadedData.url,
-               name: uploadState.file.name,
-               size: uploadState.file.size,
-               type: uploadState.file.type,
-               createdAt: Date.now(),
-               width: uploadedData.width,
-               height: uploadedData.height,
-               description: aiData.description,
-               tags: aiData.tags,
-           };
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(uploadState.file);
+          });
 
-           onUploadComplete(newFile);
-           setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.SUCCESS, progress: 100 } : u));
+          aiData = await analyzeImage(base64, uploadState.file.type);
+        }
 
-       } catch (error) {
-           console.error(error);
-           setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.ERROR, error: (error as Error).message } : u));
-       }
+        const newFile: StoredFile = {
+          id: uuidv4(),
+          url: uploadedData.url,
+          name: uploadState.file.name,
+          size: uploadState.file.size,
+          type: uploadState.file.type,
+          createdAt: Date.now(),
+          width: uploadedData.width,
+          height: uploadedData.height,
+          description: aiData.description,
+          tags: aiData.tags,
+        };
+
+        onUploadComplete(newFile);
+        setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.SUCCESS, progress: 100 } : u));
+      } catch (error) {
+        console.error(error);
+        setUploads(prev => prev.map(u => u.file === uploadState.file ? { ...u, status: UploadStatus.ERROR, error: (error as Error).message } : u));
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, onUploadComplete]); // Removed 'uploads' dependency to avoid loop, using functional updates
+  }, [config, onUploadComplete]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -117,6 +106,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
       processFiles(Array.from(e.target.files));
+      e.target.value = '';
     }
   }, [processFiles]);
 
@@ -148,7 +138,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
              </div>
           ) : (
             <div className="space-y-6">
-               <div 
+               <div
                  className={`border-2 border-dashed rounded-xl p-8 transition-colors flex flex-col items-center justify-center text-center cursor-pointer ${
                     dragActive ? 'border-blue-500 bg-blue-50' : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
                  }`}
@@ -160,14 +150,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                >
                  <UploadCloud className={`mb-4 ${dragActive ? 'text-blue-500' : 'text-slate-400'}`} size={48} />
                  <p className="text-lg font-medium text-slate-900">Click to upload or drag and drop</p>
-                 <p className="text-sm text-slate-500 mt-1">SVG, PNG, JPG or GIF (max. 10MB)</p>
-                 <input 
-                    type="file" 
-                    multiple 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleChange} 
-                    accept="image/*"
+                 <p className="text-sm text-slate-500 mt-1">Upload images, PDFs, docs, videos, and more (max. 10MB)</p>
+                 <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleChange}
                  />
                </div>
 
@@ -189,7 +178,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                                        <span className="text-xs text-slate-500 capitalize">{upload.status === UploadStatus.ANALYZING ? 'Analyzing with AI...' : upload.status.toLowerCase()}</span>
                                    </div>
                                    <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                                       <div 
+                                       <div
                                          className={`h-full transition-all duration-300 ${upload.status === UploadStatus.ERROR ? 'bg-red-500' : 'bg-blue-500'}`}
                                          style={{ width: `${upload.progress}%` }}
                                        />

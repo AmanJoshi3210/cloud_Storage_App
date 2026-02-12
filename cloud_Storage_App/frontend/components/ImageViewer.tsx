@@ -1,6 +1,6 @@
 import React from 'react';
 import { StoredFile } from '../types';
-import { X, Calendar, HardDrive, Tag, Info } from 'lucide-react';
+import { X, Calendar, HardDrive, Tag, Info, ExternalLink } from 'lucide-react';
 
 interface ImageViewerProps {
   file: StoredFile | null;
@@ -9,6 +9,8 @@ interface ImageViewerProps {
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose }) => {
   if (!file) return null;
+
+  const isImage = file.type.startsWith('image/');
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
@@ -21,7 +23,23 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ file, onClose }) => {
 
       <div className="flex flex-col md:flex-row w-full max-w-6xl h-[90vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl">
         <div className="flex-1 bg-black flex items-center justify-center p-4 relative">
-             <img src={file.url} alt={file.name} className="max-w-full max-h-full object-contain" />
+             {isImage ? (
+              <img src={file.url} alt={file.name} className="max-w-full max-h-full object-contain" />
+             ) : (
+              <div className="text-center text-white/80 max-w-md">
+                <p className="text-xl font-semibold mb-2">Preview unavailable for this file type</p>
+                <p className="text-sm text-white/60 mb-6">Open the file in a new tab to access it.</p>
+                <a
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                >
+                  <ExternalLink size={16} className="mr-2" />
+                  Open File
+                </a>
+              </div>
+             )}
         </div>
         
         <div className="w-full md:w-80 lg:w-96 bg-white border-l border-slate-200 flex flex-col overflow-y-auto">
