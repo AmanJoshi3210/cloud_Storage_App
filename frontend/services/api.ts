@@ -1,16 +1,15 @@
 import { mockBackend } from './mockBackend';
-import { User, StoredFile } from '../types';
+import { StoredFile } from '../types';
 
-// Detect if we should use the mock backend (Default to TRUE for this preview environment)
-const USE_MOCK_BACKEND = true; 
-const API_URL = 'http://localhost:5000/api';
+const useMockBackend = import.meta.env.VITE_USE_MOCK_BACKEND === 'true';
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const api = {
   auth: {
     register: async (name: string, email: string, password: string) => {
-      if (USE_MOCK_BACKEND) return mockBackend.auth.register(name, email, password);
-      
-      const res = await fetch(`${API_URL}/auth/register`, {
+      if (useMockBackend) return mockBackend.auth.register(name, email, password);
+
+      const res = await fetch(`${apiUrl}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
@@ -20,9 +19,9 @@ export const api = {
       return data;
     },
     login: async (email: string, password: string) => {
-      if (USE_MOCK_BACKEND) return mockBackend.auth.login(email, password);
-      
-      const res = await fetch(`${API_URL}/auth/login`, {
+      if (useMockBackend) return mockBackend.auth.login(email, password);
+
+      const res = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -30,27 +29,27 @@ export const api = {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       return data;
-    }
+    },
   },
   files: {
     list: async (token: string, userId: string) => {
-      if (USE_MOCK_BACKEND) return mockBackend.files.list(userId);
-      
-      const res = await fetch(`${API_URL}/files`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      if (useMockBackend) return mockBackend.files.list(userId);
+
+      const res = await fetch(`${apiUrl}/files`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       return data;
     },
     create: async (file: StoredFile, token: string, userId: string) => {
-      if (USE_MOCK_BACKEND) return mockBackend.files.create(file, userId);
-      
-      const res = await fetch(`${API_URL}/files`, {
+      if (useMockBackend) return mockBackend.files.create(file, userId);
+
+      const res = await fetch(`${apiUrl}/files`, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(file),
       });
@@ -59,14 +58,14 @@ export const api = {
       return data;
     },
     delete: async (id: string, token: string, userId: string) => {
-      if (USE_MOCK_BACKEND) return mockBackend.files.delete(id, userId);
-      
-      const res = await fetch(`${API_URL}/files/${id}`, {
+      if (useMockBackend) return mockBackend.files.delete(id, userId);
+
+      const res = await fetch(`${apiUrl}/files/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed to delete');
       return true;
-    }
-  }
+    },
+  },
 };
